@@ -2,65 +2,962 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mini App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Tezkor AI</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 16px;
-      background: var(--tg-theme-bg-color, #ffffff);
-      color: var(--tg-theme-text-color, #222222);
+    :root {
+      --green: #2fa84f;
+      --green-dark: #228b3e;
+      --green-soft: #e8f5ea;
+      --bg: #f4f8f4;
+      --card: rgba(255, 255, 255, 0.92);
+      --border: rgba(47, 168, 79, 0.16);
+      --text: #1c241e;
+      --muted: #6b766e;
+      --shadow: 0 6px 20px rgba(24, 56, 30, 0.08);
     }
-    .card {
-      background: var(--tg-theme-secondary-bg-color, #f1f3f5);
-      border-radius: 14px;
-      padding: 16px;
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      background-image: radial-gradient(rgba(47, 168, 79, 0.08) 1px, transparent 1px),
+        radial-gradient(rgba(47, 168, 79, 0.05) 1px, #f4f8f4 1px);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .topbar {
+      padding: 12px 14px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .pill-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 6px 10px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      cursor: pointer;
+      color: #2f3b32;
+    }
+
+    .icon-btn.active {
+      background: var(--green-soft);
+      color: var(--green-dark);
+    }
+
+    .back-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(110, 118, 112, 0.78);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    .credits-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 15px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .swirl {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #2fa84f, #8be09e, #1e7f38, #2fa84f);
+      display: inline-block;
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 14px 120px;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* Chat Bubbles */
+    .msg-wrap {
+      display: flex;
+      flex-direction: column;
       margin-bottom: 14px;
     }
-    button {
+
+    .msg-wrap.user {
+      align-items: flex-end;
+    }
+
+    .msg-wrap.ai {
+      align-items: flex-start;
+    }
+
+    .bubble {
+      max-width: 90%;
+      padding: 14px 16px;
+      border-radius: 20px;
+      font-size: 15px;
+      line-height: 1.5;
+      background: var(--card);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: var(--shadow);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg-wrap.user .bubble {
+      background: #e2f4e5;
+      border-color: rgba(47, 168, 79, 0.25);
+    }
+
+    .msg-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 8px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .msg-actions button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+    }
+
+    .model-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+      color: #465449;
+    }
+
+    /* Cards & Lists */
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 6px 4px 14px;
+    }
+
+    .sub-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin: 4px 4px 12px;
+    }
+
+    .tool-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--card);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .tool-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: var(--green-soft);
+      color: var(--green-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .tool-info {
+      flex: 1;
+    }
+
+    .tool-info h4 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    .tool-info p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* 2-Column Image Grid */
+    .img-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .grid-btn {
+      background: var(--card);
+      border: 1.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: 22px;
+      padding: 16px 10px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .grid-btn.selected {
+      background: #e5f5e8;
+      border-color: var(--green);
+      color: var(--green-dark);
+    }
+
+    /* Model Accordion */
+    .acc-card {
+      background: var(--card);
+      border: 1.5px solid rgba(0, 0, 0, 0.07);
+      border-radius: 22px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .acc-card.selected {
+      border-color: var(--green);
+    }
+
+    .acc-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+
+    .acc-body {
+      display: none;
+      padding: 0 14px 14px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .acc-card.open .acc-body {
+      display: block;
+    }
+
+    .radio-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .radio-row.active {
+      background: var(--green-soft);
+      font-weight: 600;
+    }
+
+    .radio-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #c2cbc4;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radio-row.active .radio-dot {
+      border-color: var(--green);
+    }
+
+    .radio-row.active .radio-dot::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    /* Bottom Dock */
+    .dock-wrap {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 12px 12px;
+      background: linear-gradient(to top, rgba(244, 248, 244, 0.98) 65%, rgba(244, 248, 244, 0));
+      z-index: 30;
+    }
+
+    .dock {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      border-radius: 26px;
+      padding: 10px 12px 8px;
+      box-shadow: 0 8px 26px rgba(15, 45, 20, 0.12);
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f6f9f6;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 20px;
+      padding: 6px 12px;
+    }
+
+    .input-row input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 15px;
+      padding: 6px 0;
+      color: var(--text);
+    }
+
+    .voice-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #eaf6ec;
+      border-radius: 20px;
+      padding: 6px 8px;
+    }
+
+    .voice-bar.active {
+      display: flex;
+    }
+
+    .voice-ok {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: var(--green);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .dock-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding: 0 2px;
+    }
+
+    .dock-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .d-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--green);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .d-btn.active {
+      background: var(--green-soft);
+      border: 1.5px solid rgba(47, 168, 79, 0.35);
+    }
+
+    .send-pill {
+      background: #8fd49f;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 20px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .send-pill.ready {
+      background: var(--green);
+    }
+
+    /* Modal */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.42);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50;
+    }
+
+    .modal-bg.open {
+      display: flex;
+    }
+
+    .modal-box {
       width: 100%;
-      padding: 14px;
+      max-width: 380px;
+      background: #fff;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+    }
+
+    .modal-box h3 {
+      margin: 0 0 8px;
+    }
+
+    .modal-box input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid #d5ded7;
+      margin: 10px 0 14px;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: #fff;
       border: none;
       border-radius: 12px;
-      font-size: 16px;
-      font-weight: bold;
+      padding: 10px 16px;
+      font-weight: 600;
       cursor: pointer;
-      background: var(--tg-theme-button-color, #2481cc);
-      color: var(--tg-theme-button-text-color, #ffffff);
+    }
+
+    .btn-ghost {
+      background: #eef2ef;
+      color: #333;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2 id="salom">Xush kelibsiz!</h2>
-    <p>Bu sizning bepul Telegram Mini App ilovangiz.</p>
+
+  <!-- Top Bar (Chat) -->
+  <div class="topbar" id="top-chat">
+    <div class="pill-group">
+      <button class="icon-btn" onclick="openScreen('models')" title="Modellar">☰</button>
+      <button class="icon-btn" onclick="showPrompts()" title="G'oyalar">💡</button>
+      <button class="icon-btn" onclick="showHistory()" title="Tarix">🕒</button>
+      <button class="icon-btn" onclick="openSettings()" title="Sozlamalar">⚙️</button>
+    </div>
+    <div class="credits-pill" onclick="openSettings()">
+      <span id="credits-num">73</span>
+      <span class="swirl"></span>
+    </div>
   </div>
 
-  <div class="card">
-    <h3>Asosiy bo‘lim</h3>
-    <p>Keyinchalik bu yerga mahsulotlar, narxlar yoki tugmalar qo‘shishingiz mumkin.</p>
-    <button onclick="bosildi()">Tekshirib ko‘rish</button>
+  <!-- Top Bar (Subpages) -->
+  <div class="topbar" id="top-sub" style="display:none;">
+    <button class="back-pill" onclick="openScreen('chat')">← Orqaga</button>
+    <div class="pill-group">
+      <button class="icon-btn" onclick="openSettings()">⚙️</button>
+      <button class="icon-btn" onclick="openScreen('chat')">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Screens -->
+  <div class="main">
+    <!-- 1. Chat Screen -->
+    <div class="screen active" id="scr-chat"></div>
+
+    <!-- 2. Text Model Selector -->
+    <div class="screen" id="scr-models">
+      <div class="section-title">Modelni tanlang</div>
+
+      <div class="acc-card open selected" id="card-gpt">
+        <div class="acc-head" onclick="toggleAcc('card-gpt')">
+          <div class="tool-icon">🌀</div>
+          <div class="tool-info">
+            <h4>GPT ●</h4>
+            <p>OpenAI — matn, rasm va kod</p>
+          </div>
+          <span>⌃</span>
+        </div>
+        <div class="acc-body">
+          <div class="radio-row active" onclick="pickTextModel('Auto', this)"><span>Auto</span><span class="radio-dot"></span></div>
+          <div class="radio-row" onclick="pickTextModel('GPT 6 Astra', this)"><span>GPT 6 Astra</span><span class="radio-dot"></span></div>
+          <div class="radio-row" onclick="pickTextModel('GPT 6 Luna', this)"><span>GPT 6 Luna</span><span class="radio-dot"></span></div>
+          <div class="radio-row" onclick="pickTextModel('GPT 6.1 Sol', this)"><span>GPT 6.1 Sol</span><span class="radio-dot"></span></div>
+          <div class="radio-row" onclick="pickTextModel('GPT 6.1 Terra', this)"><span>GPT 6.1 Terra</span><span class="radio-dot"></span></div>
+        </div>
+      </div>
+
+      <div class="acc-card" id="card-claude">
+        <div class="acc-head" onclick="toggleAcc('card-claude')">
+          <div class="tool-icon" style="background:#fbeee7;color:#c9643b;">✳️</div>
+          <div class="tool-info">
+            <h4>Claude</h4>
+            <p>Anthropic — uzun matnlar va tahlil</p>
+          </div>
+          <span>⌄</span>
+        </div>
+        <div class="acc-body">
+          <div class="radio-row" onclick="pickTextModel('Claude Sonnet', this)"><span>Claude Sonnet</span><span class="radio-dot"></span></div>
+          <div class="radio-row" onclick="pickTextModel('Claude Opus', this)"><span>Claude Opus</span><span class="radio-dot"></span></div>
+        </div>
+      </div>
+
+      <div class="acc-card" id="card-gemini">
+        <div class="acc-head" onclick="toggleAcc('card-gemini')">
+          <div class="tool-icon" style="background:#e9f1ff;color:#3b7ddd;">✦</div>
+          <div class="tool-info">
+            <h4>Gemini</h4>
+            <p>Google — multimodal model</p>
+          </div>
+          <span>⌄</span>
+        </div>
+        <div class="acc-body">
+          <div class="radio-row" onclick="pickTextModel('Gemini 2.5 Flash', this)"><span>Gemini 2.5 Flash</span><span class="radio-dot"></span></div>
+          <div class="radio-row" onclick="pickTextModel('Gemini 2.5 Pro', this)"><span>Gemini 2.5 Pro</span><span class="radio-dot"></span></div>
+        </div>
+      </div>
+
+      <div class="acc-card" id="card-deepseek">
+        <div class="acc-head" onclick="toggleAcc('card-deepseek')">
+          <div class="tool-icon" style="background:#eaefff;color:#4a6cf7;">🐳</div>
+          <div class="tool-info">
+            <h4>DeepSeek</h4>
+            <p>Mulohaza va kod</p>
+          </div>
+          <span>⌄</span>
+        </div>
+        <div class="acc-body">
+          <div class="radio-row" onclick="pickTextModel('DeepSeek R1', this)"><span>DeepSeek R1</span><span class="radio-dot"></span></div>
+        </div>
+      </div>
+
+      <div class="acc-card" id="card-grok">
+        <div class="acc-head" onclick="toggleAcc('card-grok')">
+          <div class="tool-icon" style="background:#efefef;color:#222;">⊘</div>
+          <div class="tool-info">
+            <h4>Grok</h4>
+            <p>xAI — tezkor tahlil</p>
+          </div>
+          <span>⌄</span>
+        </div>
+        <div class="acc-body">
+          <div class="radio-row" onclick="pickTextModel('Grok 3', this)"><span>Grok 3</span><span class="radio-dot"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Image Models -->
+    <div class="screen" id="scr-image">
+      <div class="sub-title">Model (<span id="img-selected-label">SeeDream 5 Pro</span>)</div>
+      <div class="img-grid">
+        <button class="grid-btn selected" onclick="pickImgModel('SeeDream 5 Pro', this)">SeeDream 5 Pro</button>
+        <button class="grid-btn" onclick="pickImgModel('Nano Banana 2 Lite', this)">Nano Banana 2 Lite</button>
+        <button class="grid-btn" onclick="pickImgModel('Nano Banana 2.1', this)">Nano Banana 2.1</button>
+        <button class="grid-btn" onclick="pickImgModel('SeeDream 5.5', this)">SeeDream 5.5</button>
+        <button class="grid-btn" onclick="pickImgModel('Grok 2', this)">Grok 2</button>
+        <button class="grid-btn" onclick="pickImgModel('FLUX 3 Klein', this)">FLUX 3 Klein</button>
+        <button class="grid-btn" onclick="pickImgModel('Z-Image', this)">Z-Image</button>
+        <button class="grid-btn" onclick="pickImgModel('Qwen 3.0 Pro', this)">Qwen 3.0 Pro</button>
+        <button class="grid-btn" onclick="pickImgModel('GPT 2.6 Economy', this)">GPT 2.6 Economy</button>
+        <button class="grid-btn" onclick="pickImgModel('WAN 2.7 Pro', this)">WAN 2.7 Pro</button>
+        <button class="grid-btn" onclick="pickImgModel('Higgsfield Soul', this)">Higgsfield Soul</button>
+      </div>
+    </div>
+
+    <!-- 4. Audio / Voice Tools -->
+    <div class="screen" id="scr-audio">
+      <div class="tool-card" onclick="useAudioTool('Matnni ovozli aytish')">
+        <div class="tool-icon">🔊</div>
+        <div class="tool-info">
+          <h4>Matnni ovozli aytish</h4>
+          <p>ElevenLabs, Gemini, UzbekVoice yoki Muxlisa</p>
+        </div>
+        <span>›</span>
+      </div>
+
+      <div class="tool-card" onclick="useAudioTool('Nutqni aniqlash')">
+        <div class="tool-icon">🎙️</div>
+        <div class="tool-info">
+          <h4>Nutqni aniqlash</h4>
+          <p>Whisper, UzbekVoice, Muxlisa yoki Gemini</p>
+        </div>
+        <span>›</span>
+      </div>
+
+      <div class="tool-card" onclick="useAudioTool('ElevenLabs vositalari')">
+        <div class="tool-icon">✨</div>
+        <div class="tool-info">
+          <h4>ElevenLabs vositalari</h4>
+          <p>Ovoz effektlari, ovozni almashtirish, fondan tozalash, subtitrlar, dublyaj va podkastlar</p>
+        </div>
+        <span>›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Input Dock -->
+  <div class="dock-wrap">
+    <div class="dock">
+      <div class="input-row" id="input-row">
+        <input type="text" id="prompt-input" placeholder="So'rovingizni yozing..." oninput="onType()" onkeydown="if(event.key==='Enter') sendPrompt()" />
+      </div>
+
+      <div class="voice-bar" id="voice-bar">
+        <button class="icon-btn" onclick="stopVoice(false)">🗑️</button>
+        <span style="font-size:15px;color:#3d5242;font-weight:500;">Tinglayapman... •••</span>
+        <button class="voice-ok" onclick="stopVoice(true)">✓</button>
+      </div>
+
+      <div class="dock-tools">
+        <div class="dock-icons">
+          <button class="d-btn" onclick="openSettings()" title="Qo'shish">+</button>
+          <button class="d-btn" id="tab-chat" onclick="openScreen('chat')" title="Chat">💬</button>
+          <button class="d-btn" id="tab-image" onclick="openScreen('image')" title="Rasm">🖼️</button>
+          <button class="d-btn" id="tab-audio" onclick="openScreen('audio')" title="Ovoz">🎵</button>
+          <button class="d-btn" id="tab-models" onclick="openScreen('models')" title="Modellar">🧊</button>
+          <button class="d-btn" onclick="startVoice()" title="Ovozli yozish">🎤</button>
+        </div>
+        <button class="send-pill" id="send-btn" onclick="sendPrompt()">↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-bg" id="settings-modal">
+    <div class="modal-box">
+      <h3>⚙️ Gemini API Sozlamalari</h3>
+      <p style="margin:0;font-size:13px;color:#5f6b62;">
+        Haqiqiy AI javob olish uchun Gemini API kalitingizni kiriting. Kalit faqat o‘zingizning telefoningizda saqlanadi.
+      </p>
+      <input type="password" id="api-key-input" placeholder="AIzaSy..." />
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeSettings()">Yopish</button>
+        <button class="btn-primary" onclick="saveKey()">Saqlash</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand(); // Mini Appni to'liq ekranga ochadi
-
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-      document.getElementById("salom").innerText = "Salom, " + user.first_name + "!";
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
     }
 
-    function bosildi() {
-      if (tg.showAlert) {
-        tg.showAlert("Mini App muvaffaqiyatli ishlayapti!");
+    let currentScreen = 'chat';
+    let currentTextModel = 'Auto';
+    let currentImgModel = 'SeeDream 5 Pro';
+    let credits = Number(localStorage.getItem('td_credits') || 73);
+    let messages = JSON.parse(localStorage.getItem('td_msgs') || '[]');
+
+    if (messages.length === 0) {
+      const uname = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : 'Do‘stim';
+      messages.push({
+        role: 'ai',
+        model: 'Gemini 2.5 Flash',
+        text: 'Salom, ' + uname + '! Men tayyorman.\nSavolingizni yozing yoki pastdagi menyudan model, rasm va ovoz bo‘limlarini sinab ko‘ring.'
+      });
+    }
+
+    document.getElementById('credits-num').innerText = credits;
+    renderMessages();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function renderMessages() {
+      const box = document.getElementById('scr-chat');
+      box.innerHTML = messages.map((m, idx) => {
+        if (m.role === 'user') {
+          return '<div class="msg-wrap user"><div class="bubble">' + escapeHtml(m.text) + '</div></div>';
+        }
+        return '<div class="msg-wrap ai">' +
+          '<div class="bubble">' + escapeHtml(m.text) + '</div>' +
+          '<div class="msg-actions">' +
+            '<button onclick="copyMsg(' + idx + ')">📋</button>' +
+            '<button onclick="speakMsg(' + idx + ')">🔊</button>' +
+            '<span class="model-badge">⚙️ ' + escapeHtml(m.model || currentTextModel) + '</span>' +
+          '</div></div>';
+      }).join('');
+      const mainEl = document.querySelector('.main');
+      mainEl.scrollTop = mainEl.scrollHeight;
+    }
+
+    function openScreen(name) {
+      currentScreen = name;
+      ['chat', 'models', 'image', 'audio'].forEach(s => {
+        document.getElementById('scr-' + s).classList.toggle('active', s === name);
+      });
+      ['tab-chat', 'tab-image', 'tab-audio', 'tab-models'].forEach(t => {
+        const el = document.getElementById(t);
+        if (el) el.classList.toggle('active', t === 'tab-' + name);
+      });
+
+      const isChat = name === 'chat';
+      document.getElementById('top-chat').style.display = isChat ? 'flex' : 'none';
+      document.getElementById('top-sub').style.display = isChat ? 'none' : 'flex';
+
+      const inp = document.getElementById('prompt-input');
+      if (name === 'image') inp.placeholder = 'Rasm uchun tavsif yozing (' + currentImgModel + ')...';
+      else if (name === 'audio') inp.placeholder = 'Yaratishni tasvirlab bering (Ovoz)...';
+      else inp.placeholder = "So'rovingizni yozing...";
+    }
+
+    function toggleAcc(id) {
+      const card = document.getElementById(id);
+      card.classList.toggle('open');
+    }
+
+    function pickTextModel(name, el) {
+      currentTextModel = name;
+      document.querySelectorAll('#scr-models .radio-row').forEach(r => r.classList.remove('active'));
+      document.querySelectorAll('#scr-models .acc-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('active');
+      el.closest('.acc-card').classList.add('selected');
+      openScreen('chat');
+    }
+
+    function pickImgModel(name, el) {
+      currentImgModel = name;
+      document.querySelectorAll('#scr-image .grid-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('img-selected-label').innerText = name;
+      document.getElementById('prompt-input').placeholder = 'Rasm uchun tavsif yozing (' + name + ')...';
+    }
+
+    function useAudioTool(title) {
+      openScreen('chat');
+      if (title === 'Matnni ovozli aytish') {
+        const txt = prompt('Ovozda o‘qiladigan matnni yozing:');
+        if (txt) speakText(txt);
       } else {
-        alert("Mini App muvaffaqiyatli ishlayapti!");
+        addAiMsg(title + ' tanlandi. Ushbu bo‘lim server API ulanganda to‘liq ishlaydi.');
       }
+    }
+
+    function onType() {
+      const val = document.getElementById('prompt-input').value.trim();
+      document.getElementById('send-btn').classList.toggle('ready', val.length > 0);
+    }
+
+    function addAiMsg(text) {
+      messages.push({ role: 'ai', model: currentTextModel, text: text });
+      localStorage.setItem('td_msgs', JSON.stringify(messages.slice(-30)));
+      renderMessages();
+    }
+
+    async function sendPrompt() {
+      const inp = document.getElementById('prompt-input');
+      const text = inp.value.trim();
+      if (!text) return;
+
+      inp.value = '';
+      onType();
+      openScreen('chat');
+
+      messages.push({ role: 'user', text: text });
+      renderMessages();
+
+      if (credits > 0) {
+        credits -= 1;
+        localStorage.setItem('td_credits', credits);
+        document.getElementById('credits-num').innerText = credits;
+      }
+
+      const apiKey = localStorage.getItem('td_gemini_key');
+      if (!apiKey) {
+        addAiMsg(
+          'Sizning so‘rovingiz qabul qilindi: "' + text + '"\n\n' +
+          'Haqiqiy AI javob berishi uchun tepadan ⚙️ (Sozlamalar) tugmasini bosib, Gemini API kalitingizni kiriting.'
+        );
+        return;
+      }
+
+      messages.push({ role: 'ai', model: currentTextModel, text: '⏳ Javob tayyorlanmoqda...' });
+      renderMessages();
+
+      try {
+        const res = await fetch(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey),
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: text }] }] })
+          }
+        );
+        const data = await res.json();
+        messages.pop();
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          addAiMsg(data.candidates[0].content.parts[0].text);
+        } else {
+          addAiMsg('Xatolik: ' + (data.error?.message || 'Javob olinmadi. Kalitni tekshiring.'));
+        }
+      } catch (e) {
+        messages.pop();
+        addAiMsg('Tarmoq xatoligi: ' + e.message);
+      }
+    }
+
+    function copyMsg(idx) {
+      navigator.clipboard?.writeText(messages[idx].text);
+      if (tg && tg.showAlert) tg.showAlert('Nusxa olindi!');
+    }
+
+    function speakText(txt) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(txt);
+        u.lang = 'uz-UZ';
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    function speakMsg(idx) {
+      speakText(messages[idx].text);
+    }
+
+    function showPrompts() {
+      const list = [
+        'O‘zbekiston tarixi haqida qisqacha yozib ber',
+        'Instagram uchun kreativ post g‘oyasi ber',
+        'Python tilida Telegram bot kodini tushuntir'
+      ];
+      document.getElementById('prompt-input').value = list[Math.floor(Math.random() * list.length)];
+      onType();
+    }
+
+    function showHistory() {
+      if (confirm('Chat tarixini tozalaysizmi?')) {
+        messages = [];
+        localStorage.removeItem('td_msgs');
+        addAiMsg('Tarix tozalandi. Yangi savol yozishingiz mumkin!');
+      }
+    }
+
+    function startVoice() {
+      document.getElementById('input-row').style.display = 'none';
+      document.getElementById('voice-bar').classList.add('active');
+    }
+
+    function stopVoice(save) {
+      document.getElementById('voice-bar').classList.remove('active');
+      document.getElementById('input-row').style.display = 'flex';
+      if (save) {
+        document.getElementById('prompt-input').value = 'Salom, menga yordam bera olasanmi?';
+        onType();
+      }
+    }
+
+    function openSettings() {
+      document.getElementById('api-key-input').value = localStorage.getItem('td_gemini_key') || '';
+      document.getElementById('settings-modal').classList.add('open');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.remove('open');
+    }
+
+    function saveKey() {
+      const k = document.getElementById('api-key-input').value.trim();
+      if (k) localStorage.setItem('td_gemini_key', k);
+      else localStorage.removeItem('td_gemini_key');
+      closeSettings();
+      if (tg && tg.showAlert) tg.showAlert('Sozlamalar saqlandi!');
     }
   </script>
 </body>
-                                   </html>
+</html>
