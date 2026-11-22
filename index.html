@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #222222);
+    }
+    .card {
+      background: var(--tg-theme-secondary-bg-color, #f1f3f5);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #ffffff);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="salom">Xush kelibsiz!</h2>
+    <p>Bu sizning bepul Telegram Mini App ilovangiz.</p>
+  </div>
+
+  <div class="card">
+    <h3>Asosiy bo‘lim</h3>
+    <p>Keyinchalik bu yerga mahsulotlar, narxlar yoki tugmalar qo‘shishingiz mumkin.</p>
+    <button onclick="bosildi()">Tekshirib ko‘rish</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand(); // Mini Appni to'liq ekranga ochadi
+
+    const user = tg.initDataUnsafe?.user;
+    if (user) {
+      document.getElementById("salom").innerText = "Salom, " + user.first_name + "!";
+    }
+
+    function bosildi() {
+      if (tg.showAlert) {
+        tg.showAlert("Mini App muvaffaqiyatli ishlayapti!");
+      } else {
+        alert("Mini App muvaffaqiyatli ishlayapti!");
+      }
+    }
+  </script>
+</body>
+                                   </html>
